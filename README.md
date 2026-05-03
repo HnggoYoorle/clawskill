@@ -57,3 +57,78 @@
 | 用户体验 | 完全无感知，Agent 自然延续话题，无需用户提示 |
 | 代码量 | 核心逻辑约 300 行 Python，轻量可维护 |
 这个项目解决了 AI Agent 从「一次性工具」走向「长期助手」的关键体验断点，也是我们在探索 Agent 记忆连续性方向的第一个落地成果。后续计划扩展到多会话合并、长期记忆向量库、跨设备记忆同步等方向。
+====================================================================================
+# 🦞 Project Name: OpenClaw Session Memory – Cross-Session Memory Continuity System
+
+## Core Pain Point Solved
+
+**Core Pain Point: AI Agent's "Cross-Session Amnesia"**
+
+Current mainstream Agent frameworks (OpenClaw, Hermes, Claude Code, etc.) universally suffer from a severe experience flaw:
+
+- After a new session starts, the Agent completely forgets all context from previous conversations
+- Users are forced to repeat "last time we talked about...", "how is that thing going..."
+- Previously agreed conclusions, pending tasks, and established execution plans are all lost
+- This severely limits the Agent's usability as a "long-term assistant", forcing users to treat the Agent as a one-shot Q&A tool
+
+**Problems with existing solutions:**
+
+- Stuffing full history into context → Severe token waste, linear cost growth
+- Manually marking important information → Increases user burden, violates the principle of automation
+- No handling at all → Broken experience, Agent appears unintelligent
+
+## Core Logic Flow
+
+This project adopts a **zero-perception + hierarchical extraction + native injection** design:
+📩 User sends first message of new session
+↓
+🔍 Trigger detection (Skill layer triggers silently, user unaware)
+↓
+├─ Check if MEMORY.md already exists?
+├─ Exists → Skip directly (idempotent design)
+└─ Does not exist → Start background memory recovery thread 🧵
+↓
+📊 Retrieval layer: SQLite query on state.db
+├─ Find recent concluded sessions on the same platform
+├─ Exclude current session (avoid self-reference)
+└─ Read last 15 messages of that session (balances completeness and efficiency)
+↓
+🧠 Processing layer: Multi-dimensional semantic extraction
+├─ To-do item recognition → Match keywords like "later", "next time", "remember", "don't forget"
+├─ Key conclusion extraction → Match decision cues like "decided", "confirmed", "agreed", "done"
+└─ Conversation context summarization → Keep last 8 rounds of core interaction
+↓
+📝 Generation layer: Structured summary assembly
+├─ Timestamp + message count statistics
+├─ To-do list (max 5 items)
+├─ Reached conclusions (max 5 items)
+├─ Recent conversation summary
+└─ Limit total length ≤ 2200 characters (token-friendly)
+↓
+💾 Injection layer: Write to ~/.openclaw/MEMORY.md
+└─ Leverage OpenClaw's native "directory files auto-loaded into context" mechanism
+No core modification needed, next message automatically carries memory ✨
+↓
+🤖 Agent natural reply: "Last time we talked about..., let's continue, right?"
+
+## Key Design Highlights
+
+- ✅ **Zero intrusion**: Implemented via Skill mechanism, no modification to Agent core code
+- ✅ **Zero perception**: Background thread executes asynchronously, user feels no latency
+- ✅ **High efficiency**: Only injects key summary, saves 80%+ tokens compared to full history
+- ✅ **Fault tolerant**: Errors in Skill layer do not affect main conversation flow
+- ✅ **Interactive**: Provides `/memory` view, `/memory refresh` manual refresh commands
+
+## Actual Results & Implementation
+
+| Metric | Result |
+|--------|--------|
+| Deployment | Zero-config installation, copy 3 files to skills directory and it works |
+| Platform compatibility | Full channel support: WeChat / Telegram / Feishu / Discord / CLI |
+| Token efficiency | Average 1500–2000 tokens/session, saves 80%+ compared to full history recovery |
+| User experience | Completely imperceptible, Agent naturally continues topic without user prompting |
+| Code size | Core logic ~300 lines of Python, lightweight and maintainable |
+
+## Summary
+
+This project solves the key experience gap that prevents AI Agents from evolving from "one-shot tools" into "long-term assistants". It is our first practical result in exploring Agent memory continuity. Future directions include multi-session merging, long-term memory vector stores, and cross-device memory synchronization.
